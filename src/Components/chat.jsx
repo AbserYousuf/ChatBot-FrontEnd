@@ -231,8 +231,11 @@ export default function Chat() {
     ta.style.height = Math.min(ta.scrollHeight, 140) + "px";
   };
 
-  const sidebarPosition = isMobile ? "fixed" : "relative";
-  const sidebarZIndex   = isMobile ? 100 : 2;
+  // Desktop: icon-only strip when collapsed. Mobile: fully hidden (width 0) when collapsed.
+  const desktopCollapsedWidth = 62;
+  const sidebarWidth = isMobile
+    ? (collapsed ? 0 : 260)
+    : (collapsed ? desktopCollapsedWidth : 260);
 
   return (
     <div style={{
@@ -252,20 +255,30 @@ export default function Chat() {
 
       {/* ══════════════════════ SIDEBAR ══════════════════════ */}
       <div style={{
-        width: collapsed ? 62 : 260,
+        width: sidebarWidth,
         height:"100vh", top:0, left:0,
         transition:"width 0.28s cubic-bezier(0.4,0,0.2,1)",
         display:"flex", flexDirection:"column",
-        background: isMobile ? "rgba(245,243,255,0.98)" : T.surface,
+        background: isMobile ? "rgba(245,243,255,0.99)" : T.surface,
         backdropFilter:"blur(20px)",
-        borderRight:`1px solid ${T.border}`,
-        flexShrink:0, overflow:"hidden",
-        position: sidebarPosition, zIndex: sidebarZIndex,
+        borderRight: sidebarWidth === 0 ? "none" : `1px solid ${T.border}`,
+        // Mobile: fixed overlay that slides in; Desktop: part of flex flow
+        position: isMobile ? "fixed" : "relative",
+        zIndex: isMobile ? 100 : 2,
+        flexShrink: 0,
+        overflow:"hidden",
+        // On mobile when collapsed, hide completely so it doesn't eat space
+        visibility: (isMobile && collapsed) ? "hidden" : "visible",
         boxShadow: isMobile && !collapsed ? `8px 0 40px rgba(99,102,241,0.18)` : `4px 0 24px rgba(99,102,241,0.06)`,
       }}>
 
         {/* Brand */}
-        <div style={{ padding: collapsed ? "18px 0" : "16px 18px", display:"flex", alignItems:"center", justifyContent: collapsed ? "center" : "space-between", borderBottom:`1px solid ${T.borderSub}`, flexShrink:0 }}>
+        <div style={{
+          padding: (!isMobile && collapsed) ? "18px 0" : "16px 18px",
+          display:"flex", alignItems:"center",
+          justifyContent: (!isMobile && collapsed) ? "center" : "space-between",
+          borderBottom:`1px solid ${T.borderSub}`, flexShrink:0
+        }}>
           <div style={{ display:"flex", alignItems:"center", gap:10 }}>
             <div style={{ width:34, height:34, borderRadius:10, flexShrink:0, background:`linear-gradient(135deg,${T.accent},${T.accentMid})`, display:"flex", alignItems:"center", justifyContent:"center", boxShadow:`0 4px 12px rgba(99,102,241,0.4)` }}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -280,20 +293,23 @@ export default function Chat() {
                 <line x1="15" y1="12" x2="18.2" y2="12" stroke="white" strokeWidth="1.3" opacity="0.7"/>
               </svg>
             </div>
-            {!collapsed && (
+            {(!isMobile || !collapsed) && (
               <div style={{ lineHeight:1 }}>
                 <p style={{ fontSize:17, fontWeight:700, color:T.text1, letterSpacing:"-0.4px", margin:0, background:`linear-gradient(135deg,${T.text1},${T.accent})`, WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>Serabo</p>
                 <p style={{ fontSize:9, color:T.accentMid, margin:0, letterSpacing:"3px", textTransform:"uppercase", fontWeight:600 }}>AI</p>
               </div>
             )}
           </div>
-          {!collapsed ? (
+          {/* Close / collapse button — only show when sidebar is open */}
+          {!(isMobile && collapsed) && (
             <button onClick={() => setCollapsed(true)} style={{ width:26, height:26, borderRadius:7, border:`1px solid ${T.borderSub}`, background:"transparent", cursor:"pointer", color:T.text3, display:"flex", alignItems:"center", justifyContent:"center", transition:"all 0.15s", flexShrink:0 }}
               onMouseEnter={e=>{ e.currentTarget.style.background=T.accentDim; e.currentTarget.style.color=T.accent; }}
               onMouseLeave={e=>{ e.currentTarget.style.background="transparent"; e.currentTarget.style.color=T.text3; }}>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M15 18l-6-6 6-6"/></svg>
             </button>
-          ) : (
+          )}
+          {/* Desktop icon-strip expand button */}
+          {!isMobile && collapsed && (
             <button onClick={() => setCollapsed(false)} style={{ marginTop:8, width:26, height:26, borderRadius:7, border:`1px solid ${T.borderSub}`, background:"transparent", cursor:"pointer", color:T.text3, display:"flex", alignItems:"center", justifyContent:"center", transition:"all 0.15s" }}
               onMouseEnter={e=>{ e.currentTarget.style.background=T.accentDim; e.currentTarget.style.color=T.accent; }}
               onMouseLeave={e=>{ e.currentTarget.style.background="transparent"; e.currentTarget.style.color=T.text3; }}>
@@ -313,11 +329,11 @@ export default function Chat() {
             const initId = nextId();
             setMessages([{ id:initId, role:"ai", text:"New session started. How can I help you today?", time:now() }]);
             setNewIds(new Set([initId]));
-            if (isMobile) setCollapsed(true);
+            setCollapsed(true);
           }} style={{
             width:"100%", display:"flex", alignItems:"center",
-            justifyContent: collapsed ? "center" : "flex-start",
-            gap:8, padding: collapsed ? "8px 0" : "9px 13px",
+            justifyContent: (!isMobile && collapsed) ? "center" : "flex-start",
+            gap:8, padding: (!isMobile && collapsed) ? "8px 0" : "9px 13px",
             borderRadius:10, border:`1px solid rgba(99,102,241,0.3)`,
             background:T.accentDim, color:T.accent,
             fontSize:12, fontWeight:600, cursor:"pointer",
@@ -327,12 +343,12 @@ export default function Chat() {
             onMouseEnter={e=>{ e.currentTarget.style.background=T.accentDimHov; e.currentTarget.style.borderColor=T.accent; }}
             onMouseLeave={e=>{ e.currentTarget.style.background=T.accentDim; e.currentTarget.style.borderColor="rgba(99,102,241,0.3)"; }}>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            {!collapsed && <span>New Chat</span>}
+            {(isMobile || !collapsed) && <span>New Chat</span>}
           </button>
         </div>
 
         {/* History label */}
-        {!collapsed && (
+        {(isMobile || !collapsed) && (
           <p style={{ padding:"12px 14px 5px", fontSize:10, fontWeight:600, letterSpacing:"1.5px", textTransform:"uppercase", color:T.text4, margin:0, flexShrink:0 }}>History</p>
         )}
 
@@ -344,7 +360,7 @@ export default function Chat() {
               onMouseLeave={() => { setHoveredConv(null); setOpenMenu(null); }}
               onClick={() => handleSessionClick(conv)}>
 
-              {editingConvId === conv._id && !collapsed ? (
+              {editingConvId === conv._id && (isMobile || !collapsed) ? (
                 <div style={{ margin:"2px 0", padding:"12px 14px", borderRadius:10, background:T.surfaceHov, border:`1px solid ${T.border}`, animation:"fadeSlideUp 0.16s ease both" }} onClick={e=>e.stopPropagation()}>
                   <p style={{ fontSize:10, fontWeight:600, letterSpacing:"1px", textTransform:"uppercase", color:T.text3, margin:"0 0 8px" }}>Rename</p>
                   <input ref={renameInputRef} type="text" value={title}
@@ -365,8 +381,8 @@ export default function Chat() {
                 <>
                   <button style={{
                     width:"100%", display:"flex", alignItems:"center",
-                    gap:9, padding: collapsed ? "8px 0" : "8px 11px",
-                    justifyContent: collapsed ? "center" : "flex-start",
+                    gap:9, padding: (!isMobile && collapsed) ? "8px 0" : "8px 11px",
+                    justifyContent: (!isMobile && collapsed) ? "center" : "flex-start",
                     borderRadius:10,
                     border: activeConv===conv._id ? `1px solid ${T.border}` : "1px solid transparent",
                     background: activeConv===conv._id ? T.surfaceHov : hoveredConv===conv._id ? "rgba(255,255,255,0.5)" : "transparent",
@@ -378,14 +394,14 @@ export default function Chat() {
                     <div style={{ width:26, height:26, borderRadius:8, flexShrink:0, background: activeConv===conv._id ? T.accentDim : "rgba(99,102,241,0.05)", border:`1px solid ${activeConv===conv._id ? "rgba(99,102,241,0.3)" : T.borderSub}`, display:"flex", alignItems:"center", justifyContent:"center" }}>
                       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={activeConv===conv._id ? T.accent : T.text4} strokeWidth="2" strokeLinecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
                     </div>
-                    {!collapsed && (
+                    {(isMobile || !collapsed) && (
                       <p style={{ flex:1, minWidth:0, fontSize:13, color:activeConv===conv._id?T.text1:T.text2, fontWeight:activeConv===conv._id?600:400, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", margin:0, paddingRight:22, letterSpacing:"-0.1px" }}>
                         {conv.title}
                       </p>
                     )}
                   </button>
 
-                  {!collapsed && (hoveredConv===conv._id || openMenu===conv._id) && (
+                  {(isMobile || !collapsed) && (hoveredConv===conv._id || openMenu===conv._id) && (
                     <button onClick={e=>{ e.stopPropagation(); setOpenMenu(openMenu===conv._id?null:conv._id); }}
                       style={{ position:"absolute", right:6, top:"50%", transform:"translateY(-50%)", width:22, height:22, borderRadius:6, border:`1px solid ${T.borderSub}`, background:openMenu===conv._id?T.accentDim:"rgba(255,255,255,0.6)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", color:T.text3, zIndex:10, transition:"all 0.12s" }}
                       onMouseEnter={e=>{ e.currentTarget.style.color=T.accent; e.currentTarget.style.borderColor=T.border; }}
@@ -420,7 +436,7 @@ export default function Chat() {
         </div>
 
         {/* Clear All */}
-        {!collapsed && (
+        {(isMobile || !collapsed) && (
           <div style={{ padding:"4px 10px 6px", flexShrink:0 }}>
             <button onClick={removeChats}
               style={{ width:"100%", display:"flex", alignItems:"center", gap:6, padding:"7px 13px", borderRadius:8, border:"1px solid rgba(244,63,94,0.12)", background:"transparent", color:"rgba(244,63,94,0.5)", fontSize:11.5, cursor:"pointer", letterSpacing:"0.3px", fontFamily:"'Sora',sans-serif", transition:"all 0.15s" }}
@@ -437,14 +453,14 @@ export default function Chat() {
         {/* User profile */}
         <div style={{ padding:"8px 10px 14px", flexShrink:0 }}>
           <div style={{ position:"relative" }}>
-            <div style={{ display:"flex", alignItems:"center", gap:10, padding: collapsed ? "8px 0" : "9px 12px", justifyContent: collapsed ? "center" : "flex-start", borderRadius:10, border:`1px solid ${T.borderSub}`, background:"rgba(255,255,255,0.5)", cursor:"pointer", transition:"all 0.12s" }}
-              onClick={() => !collapsed && setShowLogout(p=>!p)}
+            <div style={{ display:"flex", alignItems:"center", gap:10, padding: (!isMobile && collapsed) ? "8px 0" : "9px 12px", justifyContent: (!isMobile && collapsed) ? "center" : "flex-start", borderRadius:10, border:`1px solid ${T.borderSub}`, background:"rgba(255,255,255,0.5)", cursor:"pointer", transition:"all 0.12s" }}
+              onClick={() => (isMobile || !collapsed) && setShowLogout(p=>!p)}
               onMouseEnter={e=>{ e.currentTarget.style.background=T.surface; e.currentTarget.style.borderColor=T.border; }}
               onMouseLeave={e=>{ e.currentTarget.style.background="rgba(255,255,255,0.5)"; e.currentTarget.style.borderColor=T.borderSub; }}>
               <div style={{ width:32, height:32, borderRadius:10, flexShrink:0, background:`linear-gradient(135deg,${T.accent},${T.accentMid})`, border:`1px solid rgba(99,102,241,0.3)`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, fontWeight:700, color:"white", fontFamily:"'Sora',sans-serif", boxShadow:`0 3px 10px rgba(99,102,241,0.3)` }}>
                 {initials}
               </div>
-              {!collapsed && (
+              {(isMobile || !collapsed) && (
                 <>
                   <div style={{ flex:1, minWidth:0 }}>
                     <p style={{ fontSize:13, fontWeight:600, color:T.text1, margin:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", letterSpacing:"-0.2px" }}>{user?.name || "User"}</p>
@@ -457,7 +473,7 @@ export default function Chat() {
               )}
             </div>
 
-            {showLogout && !collapsed && (
+            {showLogout && (isMobile || !collapsed) && (
               <div style={{ position:"absolute", bottom:"calc(100% + 8px)", left:0, right:0, background:T.surfaceHov, border:`1px solid ${T.border}`, borderRadius:16, overflow:"hidden", boxShadow:`0 12px 40px rgba(99,102,241,0.18)`, backdropFilter:"blur(20px)", animation:"fadeSlideUp 0.2s ease both", zIndex:50 }}>
                 <div style={{ padding:"16px 16px 12px", borderBottom:`1px solid ${T.borderSub}` }}>
                   <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:14 }}>
@@ -501,12 +517,17 @@ export default function Chat() {
       </div>
 
       {/* ══════════════════════ MAIN CHAT ══════════════════════ */}
-      <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden", background:"transparent", position:"relative", zIndex:1, width: isMobile ? "100%" : "auto", minWidth:0 }}>
+      {/* On mobile the sidebar is a full overlay — main chat always takes 100% width */}
+      <div style={{
+        flex:1, display:"flex", flexDirection:"column", overflow:"hidden",
+        background:"transparent", position:"relative", zIndex:1, minWidth:0,
+      }}>
 
         {/* Topbar */}
         <div style={{ borderBottom:`1px solid ${T.borderSub}`, flexShrink:0, background:T.surface, backdropFilter:"blur(16px)" }}>
           <div style={{ padding: isMobile ? "12px 16px" : "14px 26px", display:"flex", alignItems:"center", gap:12 }}>
-            {isMobile && collapsed && (
+            {/* Show hamburger on mobile always, or on desktop when sidebar is collapsed */}
+            {(isMobile || collapsed) && (
               <button onClick={() => setCollapsed(false)} style={{ width:34, height:34, borderRadius:10, border:`1px solid ${T.borderSub}`, background:T.accentDim, cursor:"pointer", color:T.accent, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
               </button>
@@ -537,38 +558,34 @@ export default function Chat() {
         </div>
 
         {/* Messages area */}
-        <div style={{ flex:1, overflowY:"auto", padding: activeSessionId ? (isMobile ? "20px 16px 12px" : "28px 36px 12px") : "0", scrollbarWidth:"none" }}>
+        <div style={{
+          flex:1, overflowY:"auto",
+          padding: activeSessionId ? (isMobile ? "20px 16px 12px" : "28px 36px 12px") : "0",
+          scrollbarWidth:"none",
+          display:"flex", flexDirection:"column",
+        }}>
 
-          {/* Empty state */}
+          {/* ── Empty state ── */}
           {!activeSessionId && (
             <div style={{
-              display:"flex", flexDirection:"column", alignItems:"center",
-              height:"100%", overflow:"hidden",
+              flex:1,
+              display:"flex",
+              flexDirection:"column",
+              alignItems:"center",
+              minHeight:0,
+              overflow:"hidden",
               animation:"fadeSlideUp 0.4s ease both",
             }}>
-
-              {/* Spline robot */}
-              <div style={{
-                width:"100%",
-                flex:1,
-                minHeight:0,
-                position:"relative",
-              }}>
-
-                {/* Name tag */}
+              {/* Spline — fills all remaining space */}
+              <div style={{ width:"100%", flex:1, minHeight:0, position:"relative" }}>
                 <div style={{ position:"absolute", top:16, left:"50%", transform:"translateX(-50%)", zIndex:5, display:"flex", alignItems:"center", gap:7, background:"rgba(255,255,255,0.88)", backdropFilter:"blur(12px)", border:`1px solid rgba(139,92,246,0.2)`, borderRadius:99, padding:"5px 14px 5px 10px", boxShadow:"0 4px 20px rgba(99,102,241,0.12)", whiteSpace:"nowrap" }}>
                   <div style={{ width:7, height:7, borderRadius:"50%", background:T.green, boxShadow:`0 0 7px ${T.green}`, animation:"statusPulse 2s ease-in-out infinite" }}/>
                   <p style={{ margin:0, fontSize:12, fontWeight:600, color:T.text1, fontFamily:"'Sora',sans-serif", letterSpacing:"0.2px" }}>Serabo AI · Online</p>
                 </div>
-
-                {/* Drag hint */}
                 <div style={{ position:"absolute", bottom:14, left:"50%", transform:"translateX(-50%)", zIndex:5, whiteSpace:"nowrap", background:"rgba(255,255,255,0.82)", backdropFilter:"blur(10px)", border:`1px solid rgba(139,92,246,0.15)`, borderRadius:99, padding:"4px 12px", display:"flex", alignItems:"center", gap:6 }}>
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" strokeWidth="2" strokeLinecap="round">
-                    <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0m-4 8V6a2 2 0 0 1 2-2v0a2 2 0 0 1 2 2v2m-2 6v-1a1 1 0 0 1 1-1h1a3 3 0 0 1 3 3 0 0 1 0 6H9a9 9 0 0 1-3-2.2L3 14"/>
-                  </svg>
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" strokeWidth="2" strokeLinecap="round"><path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0m-4 8V6a2 2 0 0 1 2-2v0a2 2 0 0 1 2 2v2m-2 6v-1a1 1 0 0 1 1-1h1a3 3 0 0 1 3 3 0 0 1 0 6H9a9 9 0 0 1-3-2.2L3 14"/></svg>
                   <p style={{ margin:0, fontSize:10.5, color:"#8b5cf6", fontWeight:500, fontFamily:"'Sora',sans-serif" }}>Drag & interact</p>
                 </div>
-
                 <Suspense fallback={
                   <div style={{ width:"100%", height:"100%", display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:14 }}>
                     <div style={{ width:44, height:44, borderRadius:12, background:`linear-gradient(135deg,${T.accent},${T.accentMid})`, display:"flex", alignItems:"center", justifyContent:"center", animation:"statusPulse 1.6s ease-in-out infinite" }}>
@@ -580,36 +597,29 @@ export default function Chat() {
                     </div>
                   </div>
                 }>
-                  <Spline
-                    scene="https://prod.spline.design/cJKHQFEmHtIvACtt/scene.splinecode"
-                    style={{ width:"100%", height:"100%" }}
-                  />
+                  <Spline scene="https://prod.spline.design/cJKHQFEmHtIvACtt/scene.splinecode" style={{ width:"100%", height:"100%" }}/>
                 </Suspense>
               </div>
 
-              {/* CTA */}
+              {/* CTA — fixed, never shrinks, has its own background so nothing bleeds through */}
               <div style={{
-                flexShrink:0,
-                display:"flex", flexDirection:"column",
-                alignItems:"center", gap:12,
-                padding: isMobile ? "14px 20px 20px" : "18px 20px 24px",
-                width:"100%",
-                animation:"fadeSlideUp 0.5s ease 0.2s both",
+                flexShrink:0, width:"100%",
+                display:"flex", flexDirection:"column", alignItems:"center", gap:10,
+                padding: isMobile ? "14px 20px 16px" : "16px 20px 22px",
+                background: T.bgGrad,
+                borderTop:`1px solid ${T.borderSub}`,
               }}>
-                <div style={{ textAlign:"center" }}>
-                  <p style={{ fontSize: isMobile ? 15 : 17, fontWeight:700, color:T.text1, margin:"0 0 5px", letterSpacing:"-0.4px" }}>Meet Serabo AI</p>
-                  <p style={{ fontSize:13, color:T.text3, margin:0, lineHeight:"1.6", maxWidth:"280px" }}>Start a new chat or pick a conversation from the sidebar</p>
-                </div>
+                <p style={{ fontSize: isMobile ? 15 : 17, fontWeight:700, color:T.text1, margin:0, letterSpacing:"-0.4px" }}>Meet Serabo AI</p>
+                <p style={{ fontSize:12.5, color:T.text3, margin:0, lineHeight:"1.5", textAlign:"center", maxWidth:"260px" }}>Start a new chat or pick a conversation from the sidebar</p>
                 <button
                   onClick={async () => {
-                    setInput("");
-                    setActiveConv(null);
+                    setInput(""); setActiveConv(null);
                     const newId = await newchat();
                     if (newId) setActiveSessionId(newId);
                   }}
-                  style={{ display:"flex", alignItems:"center", gap:8, padding:"11px 28px", borderRadius:12, border:`1px solid rgba(99,102,241,0.3)`, background:T.accentDim, color:T.accent, fontSize:13.5, fontWeight:600, cursor:"pointer", fontFamily:"'Sora',sans-serif", transition:"all 0.15s", boxShadow:`0 4px 14px rgba(99,102,241,0.12)` }}
-                  onMouseEnter={e=>{ e.currentTarget.style.background=T.accentDimHov; e.currentTarget.style.transform="translateY(-1px)"; e.currentTarget.style.boxShadow=`0 6px 20px rgba(99,102,241,0.22)`; }}
-                  onMouseLeave={e=>{ e.currentTarget.style.background=T.accentDim; e.currentTarget.style.transform="translateY(0)"; e.currentTarget.style.boxShadow=`0 4px 14px rgba(99,102,241,0.12)`; }}>
+                  style={{ display:"flex", alignItems:"center", gap:8, padding:"10px 26px", borderRadius:12, border:`1px solid rgba(99,102,241,0.3)`, background:T.accentDim, color:T.accent, fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"'Sora',sans-serif", transition:"all 0.15s", boxShadow:`0 4px 14px rgba(99,102,241,0.12)` }}
+                  onMouseEnter={e=>{ e.currentTarget.style.background=T.accentDimHov; e.currentTarget.style.transform="translateY(-1px)"; }}
+                  onMouseLeave={e=>{ e.currentTarget.style.background=T.accentDim; e.currentTarget.style.transform="translateY(0)"; }}>
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                   Start new chat
                 </button>
@@ -618,13 +628,13 @@ export default function Chat() {
           )}
 
           {/* Messages */}
-          {messages.map(msg =>
+          {activeSessionId && messages.map(msg =>
             msg.role==="ai"
               ? <AIMessage key={msg.id} msg={msg} isNew={newIds.has(msg.id)} isMobile={isMobile}/>
               : <UserMessage key={msg.id} msg={msg} isNew={newIds.has(msg.id)} initials={initials} isMobile={isMobile}/>
           )}
 
-          {!stop && isTyping && (
+          {activeSessionId && !stop && isTyping && (
             <div style={{ display:"flex", alignItems:"flex-start", gap:12, marginBottom:16, animation:"fadeSlideUp 0.22s ease both" }}>
               <div style={{ width:32, height:32, borderRadius:10, background:`linear-gradient(135deg,${T.accent},${T.accentMid})`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, marginTop:2, boxShadow:`0 4px 12px rgba(99,102,241,0.35)` }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" fill="white" opacity="0.9"/><circle cx="12" cy="4" r="1.8" fill="white" opacity="0.6"/><circle cx="12" cy="20" r="1.8" fill="white" opacity="0.6"/><circle cx="4" cy="12" r="1.8" fill="white" opacity="0.6"/><circle cx="20" cy="12" r="1.8" fill="white" opacity="0.6"/></svg>
